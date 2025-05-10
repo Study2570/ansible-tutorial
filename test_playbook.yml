@@ -1,0 +1,63 @@
+---
+- hosts: ec2
+  become: true
+  tasks:
+    - name: Install chrony
+      yum:
+        name: chrony
+        state: present
+
+    - name: Copy chrony configuration
+      copy:
+        src: files/chrony.conf
+        dest: /etc/chrony.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart chronyd
+
+    - name: Ensure chronyd is enabled and running
+      systemd:
+        name: chronyd
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Restart chronyd
+      systemd:
+        name: chronyd
+        state: restarted
+
+- name: Install and configure chrony on test_servers
+  hosts: test_servers
+  become: yes
+  vars:
+    service_name: chrony
+  tasks:
+    - name: Install chrony (Ubuntu/Debian)
+      ansible.builtin.apt:
+        name: chrony
+        state: present
+        update_cache: yes
+
+    - name: Configure chrony
+      ansible.builtin.template:
+        src: chrony.conf.j2
+        dest: /etc/chrony/chrony.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart chrony
+
+    - name: Ensure chrony is enabled and running
+      ansible.builtin.service:
+        name: "chrony"
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Restart chrony
+      ansible.builtin.service:
+        name: "chrony"
+        state: restarted
+

@@ -1,0 +1,79 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Install chrony
+      # yum:
+      ansible.builtin.dnf:
+        name: chrony
+        state: present
+      when: ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == "Amazon"
+
+
+    - name: Copy chrony configuration
+      copy:
+        src: files/chrony.conf
+        dest: /etc/chrony.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart chronyd
+      when: ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == "Amazon"
+
+
+
+    - name: Ensure chronyd is enabled and running
+      systemd:
+        name: chronyd
+        enabled: true
+        state: started
+      when: ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == "Amazon"
+
+
+
+  handlers:
+    - name: Restart chronyd
+      systemd:
+        name: chronyd
+        state: restarted
+      when: ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == "Amazon"
+
+
+
+- name: Install and configure chrony on test_servers
+  hosts: test_servers
+  become: yes
+  vars:
+    service_name: chrony
+  tasks:
+    - name: Install chrony (Ubuntu/Debian)
+      ansible.builtin.apt:
+        name: chrony
+        state: present
+        update_cache: yes
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Configure chrony
+      ansible.builtin.template:
+        src: chrony.conf.j2
+        dest: /etc/chrony/chrony.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart chrony
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Ensure chrony is enabled and running
+      ansible.builtin.service:
+        name: "chrony"
+        state: started
+        enabled: true
+      when: ansible_facts['os_family'] == "Debian"
+
+  handlers:
+    - name: Restart chrony
+      ansible.builtin.service:
+        name: "chrony"
+        state: restarted
+      when: ansible_facts['os_family'] == "Debian"
+
