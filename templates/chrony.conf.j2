@@ -1,0 +1,43 @@
+# Welcome to the chrony configuration file. See chrony.conf(5) for more
+# information about usable directives.
+
+# Include configuration files found in /etc/chrony/conf.d.
+confdir /etc/chrony/conf.d
+
+# Use time sources from NTP Pool Project (adjust for local time source).
+pool {{ ntp_pool | default('ntp.nict.jp') }} iburst
+
+# Use time sources from DHCP.
+sourcedir /run/chrony-dhcp
+
+# Use NTP sources found in /etc/chrony/sources.d.
+sourcedir /etc/chrony/sources.d
+
+# NTP authentication file location.
+keyfile /etc/chrony/chrony.keys
+
+# Drift file location.
+driftfile /var/lib/chrony/chrony.drift
+
+# NTS keys and cookies location.
+ntsdumpdir /var/lib/chrony
+
+# Logging directory.
+logdir /var/log/chrony
+
+# Stop bad estimates upsetting machine clock.
+maxupdateskew 100.0
+
+# Enable kernel synchronization of the real-time clock.
+rtcsync
+
+# Allow access from specific network range.
+{% if allow_networks is defined %}
+{% for net in allow_networks %}
+allow {{ net }}
+{% endfor %}
+{% else %}
+#allow 10.0.0.0/24
+{% endif %}
+
+# Uncomment the following line to turn logging
